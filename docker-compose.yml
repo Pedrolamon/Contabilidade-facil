@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./backend/prisma/dev.db:/app/prisma/dev.db
+    environment:
+      - DATABASE_URL=file:./dev.db
+
+  frontend:
+    build: .
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
