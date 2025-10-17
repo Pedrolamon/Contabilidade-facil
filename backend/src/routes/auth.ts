@@ -15,10 +15,23 @@ app.use(cors());
 app.use(express.json());
 
 // Authentication routes
-app.post('/auth/register', async (req: Request, res: Response) => {
-  try {
+app.post('/register', async (req: Request, res: Response) => {
     const { name, email, password, role } = req.body;
+
+    if (!name || !email || !password) {
+    return res
+      .status(400)
+      .json({ message: "Nome, email e senha são obrigatórios." });
+  }
+
+  try {
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) {
+      return res.status(409).json({ message: "E-mail já cadastrado." });
+    }
+    
     const hashedPassword = await bcrypt.hash(password, 10);
+    
     const user = await prisma.user.create({
       data: {
         name,
@@ -27,13 +40,15 @@ app.post('/auth/register', async (req: Request, res: Response) => {
         role: role || 'user',
       },
     });
+
     res.json({ message: 'User created successfully', user: { id: user.id, name: user.name, email: user.email, role: user.role } });
   } catch (error) {
+    console.log("erro no backend", error)
     res.status(500).json({ error: 'Failed to register user' });
   }
 });
 
-app.post('/auth/login', async (req: Request, res: Response) => {
+app.post('/login', async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
     const user = await prisma.user.findUnique({
