@@ -4,6 +4,10 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
 
+import {authenticateToken} from "../middleware/authenticateToken"
+import {checkPermission} from "../middleware/authenticateToken"
+
+
 const prisma = new PrismaClient();
 const app = express();
 
@@ -59,37 +63,6 @@ app.post('/auth/login', async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Failed to login' });
   }
 });
-
-// Middleware to verify JWT token
-const authenticateToken = (req: Request, res: Response, next: any) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-
-  if (!token) {
-    return res.status(401).json({ error: 'Access token required' });
-  }
-
-  jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key', (err: any, user: any) => {
-    if (err) {
-      return res.status(403).json({ error: 'Invalid token' });
-    }
-    (req as any).user = user;
-    next();
-  });
-};
-
-// Middleware to check permissions
-const checkPermission = (requiredRole: string) => {
-  return (req: Request, res: Response, next: any) => {
-    const user = (req as any).user;
-    const roleHierarchy: { [key: string]: number } = { user: 1, manager: 2, admin: 3 };
-
-    if (roleHierarchy[user.role] < roleHierarchy[requiredRole]) {
-      return res.status(403).json({ error: 'Insufficient permissions' });
-    }
-    next();
-  };
-};
 
 
 // Users management routes (admin only)
